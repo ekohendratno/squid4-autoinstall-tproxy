@@ -1,0 +1,22 @@
+/ip firewall mangle
+add action=mark-routing chain=prerouting comment="Routing Proxy" dst-port=80 \
+    in-interface=lan new-routing-mark=tproxy_rm passthrough=no protocol=tcp \
+    src-address-list=!matikan
+add action=mark-routing chain=prerouting dst-port=8080 in-interface=lan \
+    new-routing-mark=tproxy_rm passthrough=no protocol=tcp src-address-list=\
+    !matikan
+add action=mark-routing chain=prerouting dst-address-list=!BBM dst-port=443 \
+    in-interface=lan new-routing-mark=tproxy_rm passthrough=no protocol=tcp \
+    src-address-list=client
+add action=mark-connection chain=prerouting dst-port=80,443 in-interface=\
+    ether3 new-connection-mark=tproxy_cm passthrough=yes protocol=tcp \
+    src-address=!192.168.11.2
+add action=mark-routing chain=prerouting connection-mark=tproxy_cm \
+    in-interface=!ether3 new-routing-mark=tproxy_rm passthrough=no
+add action=mark-packet chain=prerouting comment=\
+    MARK_CACHE_HIT_FROM_PROXY_ZAIB dscp=12 new-packet-mark=proxy passthrough=\
+    no
+
+/ip route
+add comment=TPROXY distance=1 gateway=192.168.11.2 routing-mark=tproxy_rm
+add check-gateway=ping distance=1 gateway=172.19.10.1
